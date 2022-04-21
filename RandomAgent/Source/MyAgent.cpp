@@ -12,21 +12,28 @@ MyAgent::MyAgent(Game& game)
     // do any preprocessing here
 
     // start with our own copy of the full word set
-    m_word_set = GetGame().GetWordSet();
+    game_word_set = GetGame().GetWordSet();
+    attempt = 0;
 }
 
 
 // return the agent's next guess at the solution
 std::string MyAgent::GetNextGuess()
 {
-    // if (there has been a previous guess) then
-    auto gr = GetGame().GetLastGuessResult();
-    if (gr)
+    attempt++;
+    if (attempt % 2)
     {
+        iteration_word_set = GetGame().GetWordSet();
+    }
+
+    else
+    {
+        auto gr = GetGame().GetLastGuessResult();
+
         // update our knowledge based on the result of the last guess
 
         // first, remove the guess from the list as it obviously wasn't correct
-        m_word_set.erase(gr->guess);
+        iteration_word_set.erase(gr->guess);
 
         // for the result code associated with each letter of the guess
         for (size_t letterIndex = 0; letterIndex < gr->result.size(); letterIndex++)
@@ -35,12 +42,12 @@ std::string MyAgent::GetNextGuess()
             if (gr->result[letterIndex] == Colour::GREEN)
             {
                 // for our word set, filter out any words which don't have this letter in that position
-                for (WordSet::iterator wordSetIterator = m_word_set.begin(); wordSetIterator != m_word_set.end();)
+                for (WordSet::iterator wordSetIterator = iteration_word_set.begin(); wordSetIterator != iteration_word_set.end();)
                 {
                     // if (this letter of this word doesn't match this letter of the guess word) then
                     if ((*wordSetIterator)[letterIndex] != gr->guess[letterIndex])
                     {
-                        wordSetIterator = m_word_set.erase(wordSetIterator);
+                        wordSetIterator = iteration_word_set.erase(wordSetIterator);
                     }
 
                     else
@@ -54,7 +61,7 @@ std::string MyAgent::GetNextGuess()
             if (gr->result[letterIndex] == Colour::BLACK)
             {
                 // filter out any words that include this letter from the word set
-                for (WordSet::iterator wordSetIterator = m_word_set.begin(); wordSetIterator != m_word_set.end(); ++wordSetIterator)
+                for (WordSet::iterator wordSetIterator = iteration_word_set.begin(); wordSetIterator != iteration_word_set.end(); ++wordSetIterator)
                 {
                     // look at all of the letters in the word set word to see if it includes the filtered letter
                     for (size_t wordSetLetterIndex = 0; wordSetLetterIndex < (*wordSetIterator).size(); wordSetLetterIndex++)
@@ -66,18 +73,18 @@ std::string MyAgent::GetNextGuess()
                         if ((*wordSetIterator)[wordSetLetterIndex] == gr->guess[letterIndex] && gr->result[wordSetLetterIndex] != Colour::GREEN)
                         {
                             // if the word is not the final word in the word set
-                            if (wordSetIterator != --m_word_set.end())
+                            if (wordSetIterator != --iteration_word_set.end())
                             {
                                 // delete the word and reset the letter index back to -1, ready for the next word
                                 // -1 because the index will increment back up to 0
                                 wordSetLetterIndex = -1;
-                                wordSetIterator = m_word_set.erase(wordSetIterator);
+                                wordSetIterator = iteration_word_set.erase(wordSetIterator);
                             }
 
                             else
                             {
                                 // delete the word without exceeding the bounds of the word set and exit the letter index for loop
-                                wordSetIterator = --m_word_set.erase(wordSetIterator);
+                                wordSetIterator = --iteration_word_set.erase(wordSetIterator);
                                 break;
                             }
                         }
@@ -87,11 +94,11 @@ std::string MyAgent::GetNextGuess()
 
             if (gr->result[letterIndex] == Colour::YELLOW)
             {
-                for (WordSet::iterator wordSetIterator = m_word_set.begin(); wordSetIterator != m_word_set.end();)
+                for (WordSet::iterator wordSetIterator = iteration_word_set.begin(); wordSetIterator != iteration_word_set.end();)
                 {
                     if ((*wordSetIterator)[letterIndex] == gr->guess[letterIndex])
                     {
-                        wordSetIterator = m_word_set.erase(wordSetIterator);
+                        wordSetIterator = iteration_word_set.erase(wordSetIterator);
                     }
 
                     else
@@ -114,10 +121,23 @@ std::string MyAgent::GetNextGuess()
 
                         else
                         {
-                            wordSetIterator = m_word_set.erase(wordSetIterator);
+                            wordSetIterator = iteration_word_set.erase(wordSetIterator);
                         }
                     }
                 }
+            }
+        }
+
+        for (WordSet::iterator gameWordSetIterator = game_word_set.begin(); gameWordSetIterator != game_word_set.end();)
+        {
+            if (!iteration_word_set.count(*gameWordSetIterator))
+            {
+                gameWordSetIterator = game_word_set.erase(gameWordSetIterator);
+            }
+
+            else
+            {
+                ++gameWordSetIterator;
             }
         }
     }
@@ -127,11 +147,22 @@ std::string MyAgent::GetNextGuess()
 
     // return a random item from our remaining word set
 
+    WordSet guess_word_set;
     WordSet mostVowelsWords;
     size_t maximumVowels = 0;
     std::string vowels;
 
-    for (WordSet::iterator wordSetIterator = m_word_set.begin(); wordSetIterator != m_word_set.end(); ++wordSetIterator)
+    if (attempt % 2)
+    {
+        guess_word_set = iteration_word_set;
+    }
+
+    else
+    {
+        guess_word_set = game_word_set;
+    }
+
+    for (WordSet::iterator wordSetIterator = guess_word_set.begin(); wordSetIterator != guess_word_set.end(); ++wordSetIterator)
     {
         size_t vowelCount = 0;
         vowels = "AEIOU";

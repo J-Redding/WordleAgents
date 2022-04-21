@@ -16,5 +16,7 @@ public:
 
 private:
 
-    WordSet m_word_set;
+    WordSet game_word_set;
+    WordSet iteration_word_set;
+    int attempt;
 };
