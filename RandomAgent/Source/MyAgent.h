@@ -16,5 +16,8 @@ public:
 
 private:
 
-    WordSet m_word_set;
+    WordSet potentialWords;
+    WordSet entireWordSet;
+    size_t remainingGuesses;
+    std::string knownLetters;
 };
